@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>نجوم لِيكِ</title>
+<link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Tajawal:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--night:#0d0b21;--ink:#fdf3e3;--gold:#f5d38a;--rose:#ff7a9c;--dim:#b8aed6;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--night:#0d0b21}}
+:root[data-theme="dark"]{--night:#0d0b21}
+html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:"Tajawal",system-ui,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+.scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4rem;padding:2rem 1.5rem;text-align:center;opacity:0;pointer-events:none;transition:opacity 1s}
+.scene.on{opacity:1;pointer-events:auto}
+h1,.big{font-family:"Aref Ruqaa",serif;font-weight:700;margin:0;line-height:1.5}
+.big{font-size:clamp(1.7rem,6vw,2.6rem);max-width:30ch}
+p{margin:0;color:var(--dim);font-size:1.05rem;line-height:1.9;max-width:34ch}
+.btn{font:inherit;font-size:1.05rem;color:var(--ink);background:rgba(245,211,138,.08);border:1px solid var(--gold);border-radius:999px;padding:.7rem 2rem;cursor:pointer;transition:transform .25s,background .25s}
+.btn:hover,.btn:focus-visible{background:rgba(245,211,138,.2);outline:2px solid var(--gold);outline-offset:3px}
+.btn.yes{background:var(--rose);border-color:var(--rose);color:#2a0b17;font-weight:500}
+#star{font-size:4.5rem;color:var(--gold);background:none;border:0;cursor:pointer;animation:pulse 2s ease-in-out infinite;text-shadow:0 0 30px var(--gold)}
+@keyframes pulse{50%{transform:scale(1.18);text-shadow:0 0 60px var(--gold)}}
+#s1{justify-content:flex-end;padding-bottom:3rem}
+#name{position:fixed;top:42%;left:0;right:0;transform:translateY(-50%);font-family:"Aref Ruqaa",serif;font-size:clamp(2.2rem,10vw,4rem);color:var(--gold);text-shadow:0 0 24px rgba(245,211,138,.6);opacity:0;transition:opacity 2s}
+#name.on{opacity:1}
+.pet{font-size:.55em;margin-top:.3rem}
+#cap,#next1{opacity:0;transition:opacity 1.5s}
+#cap.on,#next1.on{opacity:1}
+#msg{transition:opacity .6s}
+#days{font-family:"Aref Ruqaa",serif;font-size:clamp(4rem,20vw,7rem);color:var(--gold);line-height:1;text-shadow:0 0 30px rgba(245,211,138,.5)}
+#no{position:fixed}
+.row{display:flex;gap:1rem;align-items:center;justify-content:center;min-height:4rem}
+@media (prefers-reduced-motion:reduce){#star{animation:none}.scene,#name,#cap,#next1{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<section class="scene on" id="s0">
+  <button id="star" aria-label="المسي النجمة">✦</button>
+  <p>في حاجة صغيرة جهّزتها ليك.<br>المسي النجمة.</p>
+</section>
+
+<section class="scene" id="s1">
+  <div id="name"></div>
+  <p id="cap">النجوم اتجمّعت عشان تكتب اسمك.</p>
+  <button class="btn" id="next1">كمّلي</button>
+</section>
+
+<section class="scene" id="s2">
+  <div class="big" id="msg"></div>
+  <button class="btn" id="next2">كمّلي</button>
+</section>
+
+<section class="scene" id="s3">
+  <p>من يوم ما عرفتك<br><bdi dir="ltr" style="color:var(--gold);font-size:1.4rem">٢٢ / ١٠ / ٢٠٢٦</bdi><br>لحدي الليلة</p>
+  <div id="days">0</div>
+  <p>يوم، وكل يوم فيهم كان أحلى من الما قبلو.</p>
+  <button class="btn" id="next3">كمّلي</button>
+</section>
+
+<section class="scene" id="s4">
+  <div class="big" id="q"></div>
+  <div class="row"><button class="btn yes" id="yes">أيوه، أقبل</button><button class="btn" id="no">لا</button></div>
+</section>
+
+<section class="scene" id="s5">
+  <div class="big" id="final"></div>
+  <p id="sig"></p>
+</section>
+
+<script>
+// ✦ عدّلي هنا: الاسم، تاريخ البداية (YYYY-MM-DD أو null)، والرسائل
+const CFG={
+  her:"صفا", him:"عبدو", start:"2026-10-22",
+  lines:[
+    "في ناس بتعدّي في حياتك وتمشي، وفي ناس بتجي وتغيّر لون الدنيا كلها. إنتِ التانية.",
+    "عملت في حياتي أخطاء كتيرة، بس إنتِ الشي الوحيد الصح فيها.",
+    "ما عرفت أقول ليك الكلام دا بصوتي، فكتبتو ليك هنا."
+  ],
+  q:"تقبلي نكمّل العمر كلو مع بعض؟",
+  final:"كنت عارف إنك هتقولي أيوا. إنتي أحلى صدفة في حياتي، وكل يوم معاك بقول الحمد لله إني قابلتك."
+};
+
+const $=id=>document.getElementById(id);
+const cv=$("c"),ctx=cv.getContext("2d");
+const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+let W,H,DPR,stars=[],heart=[],prog=0,mode="idle",bits=[];
+
+function resize(){
+  DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+  stars=Array.from({length:160},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,p:Math.random()*6.28,s:Math.random()*.02+.005}));
+  const sc=Math.min(W,H*.72)/36,N=30;
+  heart=Array.from({length:N},(_,i)=>{const t=i/N*6.2832;
+    return{x:W/2+16*Math.pow(Math.sin(t),3)*sc,
+           y:H*.42-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*sc}});
+}
+addEventListener("resize",resize);resize();
+
+function drawHeart(){
+  const n=Math.floor(prog);
+  ctx.strokeStyle="rgba(245,211,138,.55)";ctx.lineWidth=1.4;
+  ctx.beginPath();
+  for(let i=0;i<Math.min(n,heart.length);i++){i?ctx.lineTo(heart[i].x,heart[i].y):ctx.moveTo(heart[i].x,heart[i].y)}
+  if(n>=heart.length)ctx.closePath();
+  ctx.stroke();
+  const beat=n>=heart.length?1+Math.sin(Date.now()/350)*.25:1;
+  for(let i=0;i<Math.min(n,heart.length);i++){
+    ctx.fillStyle="#f5d38a";ctx.shadowColor="#f5d38a";ctx.shadowBlur=14;
+    ctx.beginPath();ctx.arc(heart[i].x,heart[i].y,2.6*beat,0,6.283);ctx.fill();
+  }
+  ctx.shadowBlur=0;
+}
+
+function frame(){
+  ctx.fillStyle="#0d0b21";ctx.fillRect(0,0,W,H);
+  for(const s of stars){s.p+=s.s;ctx.fillStyle="rgba(253,243,227,"+(.35+Math.sin(s.p)*.3)+")";ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,6.283);ctx.fill()}
+  if(mode==="heart"){if(prog<heart.length)prog+=reduce?heart.length:.14;drawHeart()}
+  ctx.textAlign="center";
+  for(const b of bits){b.y+=b.v;b.x+=Math.sin((b.y+b.o)/40)*.8;ctx.font=b.s+"px serif";ctx.fillStyle=b.c;ctx.fillText("♥",b.x,b.y)}
+  bits=bits.filter(b=>b.y<H+40);
+  requestAnimationFrame(frame);
+}
+frame();
+
+function go(n){document.querySelectorAll(".scene").forEach(s=>s.classList.toggle("on",s.id==="s"+n))}
+
+$("name").innerHTML=CFG.her+'<div class="pet">كويتييييي ي كويتييييي</div>';
+$("star").onclick=()=>{
+  go(1);mode="heart";
+  const wait=reduce?200:heart.length/.14/60*1000+300;
+  setTimeout(()=>{$("name").classList.add("on")},wait);
+  setTimeout(()=>{$("cap").classList.add("on");$("next1").classList.add("on")},wait+1800);
+};
+
+let mi=0;
+function showMsg(){
+  const m=$("msg");m.style.opacity=0;
+  setTimeout(()=>{m.textContent=CFG.lines[mi];m.style.opacity=1},350);
+  $("next2").textContent=mi===CFG.lines.length-1?"كمّلي":"التالي";
+}
+$("next1").onclick=()=>{mode="idle";go(2);showMsg()};
+$("next2").onclick=()=>{
+  if(++mi<CFG.lines.length)return showMsg();
+  if(CFG.start){go(3);countUp()}else{go(4)}
+};
+function countUp(){
+  const d=Math.max(0,Math.floor((Date.now()-new Date(CFG.start))/864e5)),t0=performance.now();
+  (function tick(t){const k=Math.min((t-t0)/2200,1);$("days").textContent=Math.round(d*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)})(t0);
+}
+$("next3").onclick=()=>go(4);
+
+$("q").textContent=CFG.q;
+let grow=1;
+function dodge(e){
+  e.preventDefault();const b=$("no");
+  b.style.left=Math.random()*(W-b.offsetWidth-20)+10+"px";
+  b.style.top=Math.random()*(H-b.offsetHeight-60)+30+"px";
+  grow=Math.min(grow+.12,2);$("yes").style.transform="scale("+grow+")";
+}
+["pointerenter","pointerdown","click"].forEach(ev=>$("no").addEventListener(ev,dodge));
+$("yes").onclick=()=>{
+  go(5);$("final").textContent=CFG.final;$("sig").textContent="— "+CFG.him;
+  const cols=["#ff7a9c","#f5d38a","#ffb3c7","#fdf3e3"];
+  for(let i=0;i<110;i++)setTimeout(()=>bits.push({x:Math.random()*W,y:-20,v:Math.random()*2+1.2,o:Math.random()*99,s:Math.random()*22+12,c:cols[i%4]}),i*50);
+  setInterval(()=>{if(bits.length<80)bits.push({x:Math.random()*W,y:-20,v:Math.random()*2+1.2,o:Math.random()*99,s:Math.random()*22+12,c:cols[Math.random()*4|0]})},400);
+};
+</script>
+</body>
+</html>
